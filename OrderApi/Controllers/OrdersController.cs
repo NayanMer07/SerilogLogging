@@ -40,5 +40,15 @@ namespace OrderApi.Controllers
             // ... return order
             return Ok(new { id });
         }
+
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> CancelOrder(int id, string reason)
+        {
+            _logger.LogInformation("Cancel order {OrderId} due to {reason}", id, reason);
+            // ... return order
+            await _orders.CancelOrderAsync(id, reason);
+            return Ok(new { id, reason });
+        }
     }
 }

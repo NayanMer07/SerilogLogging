@@ -99,6 +99,7 @@ Base URL (local): `https://localhost:5001/api`
 |--------|----------|-------------|-------------|
 | `POST` | `/api/orders` | Place a new order | Info: order placed, scope with OrderId |
 | `GET` | `/api/orders/{id}` | Get order by ID | Debug: fetching order |
+| `DELETE` | `/api/orders/{id}` | Cancel an order | Warning: order cancelled + reason |
 
 
 Every request also emits one structured `HTTP {Method} {Path} responded {StatusCode} in {Elapsed} ms` log via `UseSerilogRequestLogging`.

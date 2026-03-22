@@ -21,3 +21,8 @@ content-type: application/json
 }
 
 ###
+
+DELETE  {{OrderApi_HostAddress}}/Orders/1042?reason=OutOfStock
+Accept: application/json
+
+###
