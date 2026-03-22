@@ -1,0 +1,23 @@
+@OrderApi_HostAddress = http://localhost:5197/api
+
+GET {{OrderApi_HostAddress}}/Orders/1042
+Accept: application/json
+
+###
+
+GET {{OrderApi_HostAddress}}/Orders/abcd
+Accept: application/json
+
+###
+
+POST {{OrderApi_HostAddress}}/Orders
+Accept: application/json
+content-type: application/json
+{
+   "id":1142,
+   "customerEmail":"john@acme.com",
+   "total":249.99,
+   "status":"Pending"
+}
+
+###

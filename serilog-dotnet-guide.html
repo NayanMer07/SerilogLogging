@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serilog Logging in .NET Core – Complete Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal:       #14B8A6;
+    --teal-light: #5EEAD4;
+    --teal-dark:  #0D9488;
+    --bg:         #080E0E;
+    --bg2:        #0C1414;
+    --bg3:        #101C1C;
+    --surface:    #162020;
+    --surface2:   #1C2A2A;
+    --border:     #1E3030;
+    --text:       #E2EEEE;
+    --muted:      #6B9090;
+    --green:      #4ADE80;
+    --amber:      #FBBF24;
+    --orange:     #FB923C;
+    --blue:       #60A5FA;
+    --purple:     #C084FC;
+    --pink:       #F472B6;
+    --red:        #F87171;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;line-height:1.7;min-height:100vh}
+
+  /* ── HERO ── */
+  .hero{
+    background:linear-gradient(145deg,#040A0A 0%,#091414 55%,#050B0B 100%);
+    border-bottom:1px solid var(--border);padding:56px 40px 48px;position:relative;overflow:hidden;
+  }
+  .hero::before{content:'';position:absolute;top:-80px;left:-60px;width:480px;height:480px;
+    background:radial-gradient(circle,rgba(20,184,166,.13) 0%,transparent 65%);pointer-events:none}
+  .hero::after{content:'';position:absolute;bottom:-60px;right:60px;width:320px;height:320px;
+    background:radial-gradient(circle,rgba(96,165,250,.06) 0%,transparent 70%);pointer-events:none}
+  .hero-inner{max-width:980px;margin:0 auto;position:relative}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.3);
+    color:var(--teal-light);font-family:'Fira Code',monospace;font-size:11px;
+    padding:5px 14px;border-radius:3px;margin-bottom:22px;letter-spacing:.07em;
+  }
+  .pulse{width:6px;height:6px;background:var(--teal-light);border-radius:50%;animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.8)}}
+  h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:clamp(28px,4.8vw,50px);font-weight:800;
+     line-height:1.06;letter-spacing:-.025em;margin-bottom:14px}
+  h1 em{font-style:normal;color:var(--teal-light)}
+  .hero-desc{color:var(--muted);font-size:15px;max-width:560px;font-weight:300}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+  .chip{background:var(--surface);border:1px solid var(--border);color:var(--muted);
+        font-family:'Fira Code',monospace;font-size:11px;padding:4px 11px;border-radius:3px}
+  .chip.hi{color:var(--teal-light);border-color:rgba(20,184,166,.28);background:rgba(20,184,166,.07)}
+  .chip.a{color:var(--amber);border-color:rgba(251,191,36,.28);background:rgba(251,191,36,.07)}
+
+  /* ── NAV ── */
+  .nav-wrap{position:sticky;top:0;z-index:100;background:rgba(8,14,14,.96);
+            backdrop-filter:blur(14px);border-bottom:1px solid var(--border);overflow-x:auto}
+  .nav{display:flex;max-width:980px;margin:0 auto;padding:0 40px}
+  .nb{background:none;border:none;cursor:pointer;color:var(--muted);
+      font-family:'Fira Code',monospace;font-size:11px;padding:13px 14px;
+      white-space:nowrap;border-bottom:2px solid transparent;transition:all .18s;letter-spacing:.03em}
+  .nb:hover{color:var(--text)}
+  .nb.on{color:var(--teal-light);border-bottom-color:var(--teal)}
+
+  /* ── LAYOUT ── */
+  .wrap{max-width:980px;margin:0 auto;padding:40px}
+  .sec{display:none;animation:fi .28s ease}
+  .sec.on{display:block}
+  @keyframes fi{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ── SECTION HEADER ── */
+  .sh{display:flex;align-items:flex-start;gap:18px;margin-bottom:32px;padding-bottom:22px;border-bottom:1px solid var(--border)}
+  .snum{background:linear-gradient(135deg,var(--teal),var(--teal-dark));color:#fff;
+        font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:17px;
+        width:46px;height:46px;border-radius:10px;display:flex;align-items:center;
+        justify-content:center;flex-shrink:0;box-shadow:0 4px 18px rgba(20,184,166,.3)}
+  .stitle h2{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;margin-bottom:3px}
+  .stitle p{color:var(--muted);font-size:13px}
+
+  /* ── CARDS ── */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:18px}
+  .card h3{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:700;
+           margin-bottom:10px;display:flex;align-items:center;gap:9px}
+  .ico{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;
+       justify-content:center;font-size:13px;flex-shrink:0}
+  .ico.t{background:rgba(20,184,166,.18)} .ico.g{background:rgba(74,222,128,.18)}
+  .ico.a{background:rgba(251,191,36,.18)} .ico.b{background:rgba(96,165,250,.18)}
+  .ico.p{background:rgba(192,132,252,.18)}.ico.r{background:rgba(248,113,113,.18)}
+  .card p{color:var(--muted);font-size:14px;line-height:1.6}
+
+  /* ── CODE ── */
+  .cb{background:#040C0C;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin:18px 0;font-family:'Fira Code',monospace}
+  .ch{display:flex;justify-content:space-between;align-items:center;
+      background:var(--bg3);padding:9px 15px;border-bottom:1px solid var(--border)}
+  .cl{font-size:10.5px;color:var(--teal-light);letter-spacing:.05em;text-transform:uppercase}
+  .cpbtn{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);
+         font-family:'Fira Code',monospace;font-size:10px;padding:3px 10px;border-radius:4px;
+         cursor:pointer;transition:all .18s}
+  .cpbtn:hover{background:rgba(255,255,255,.09);color:var(--text)}
+  .cpbtn.ok{color:var(--green);border-color:rgba(74,222,128,.35)}
+  pre{padding:18px;overflow-x:auto;font-size:12.5px;line-height:1.75}
+  .kw{color:#F472B6} .ty{color:var(--blue)} .st{color:var(--green)}
+  .cm{color:#2E5050;font-style:italic} .at{color:var(--amber)} .fn{color:#34D399}
+  .nm{color:var(--amber)} .pr{color:var(--purple)} .vl{color:var(--teal-light)}
+
+  /* ── LOG LEVEL DISPLAY ── */
+  .log-demo{background:#040C0C;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin:18px 0}
+  .log-demo-head{background:var(--bg3);padding:9px 15px;border-bottom:1px solid var(--border);
+                 font-family:'Fira Code',monospace;font-size:10.5px;color:var(--teal-light);letter-spacing:.05em}
+  .log-lines{padding:14px 18px;display:flex;flex-direction:column;gap:5px}
+  .ll{font-family:'Fira Code',monospace;font-size:12px;display:flex;align-items:baseline;gap:10px}
+  .ll .ts{color:#1E4040;font-size:11px}
+  .ll .lvl{font-size:11px;font-weight:600;padding:1px 7px;border-radius:3px;flex-shrink:0}
+  .ll .msg{color:var(--text)}
+  .ll .prop{color:var(--teal-light);font-size:11px}
+  .lvl.vrb{background:rgba(107,144,144,.15);color:#6B9090}
+  .lvl.dbg{background:rgba(96,165,250,.12);color:var(--blue)}
+  .lvl.inf{background:rgba(20,184,166,.12);color:var(--teal-light)}
+  .lvl.wrn{background:rgba(251,191,36,.12);color:var(--amber)}
+  .lvl.err{background:rgba(248,113,113,.12);color:var(--red)}
+  .lvl.ftl{background:rgba(248,113,113,.2);color:#FF4444;font-weight:700}
+
+  /* ── SINK CARDS ── */
+  .sink-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0}
+  @media(max-width:640px){.sink-grid{grid-template-columns:1fr}}
+  .sink-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+             padding:18px;transition:border-color .2s;cursor:default}
+  .sink-card:hover{border-color:rgba(20,184,166,.4)}
+  .sink-icon{font-size:22px;margin-bottom:8px}
+  .sink-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;margin-bottom:4px}
+  .sink-pkg{font-family:'Fira Code',monospace;font-size:10.5px;color:var(--teal-light);margin-bottom:6px}
+  .sink-desc{font-size:12.5px;color:var(--muted);line-height:1.5}
+
+  /* ── TABLE ── */
+  .tbl{width:100%;border-collapse:collapse}
+  .tbl th{text-align:left;padding:9px 13px;font-family:'Fira Code',monospace;font-size:10.5px;
+          color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
+  .tbl td{padding:11px 13px;font-size:13px;border-bottom:1px solid rgba(30,48,48,.5);vertical-align:top}
+  .tbl tr:hover td{background:rgba(255,255,255,.015)}
+  .tag{font-family:'Fira Code',monospace;font-size:11px;padding:2px 8px;border-radius:3px;display:inline-block}
+  .tag.t{background:rgba(20,184,166,.12);color:var(--teal-light)}
+  .tag.g{background:rgba(74,222,128,.1);color:var(--green)}
+  .tag.a{background:rgba(251,191,36,.1);color:var(--amber)}
+  .tag.b{background:rgba(96,165,250,.1);color:var(--blue)}
+  .tag.r{background:rgba(248,113,113,.1);color:var(--red)}
+
+  /* ── ALERTS ── */
+  .alert{display:flex;gap:13px;padding:14px 18px;border-radius:8px;margin:14px 0;font-size:13.5px}
+  .alert.info{background:rgba(96,165,250,.07);border:1px solid rgba(96,165,250,.22)}
+  .alert.warn{background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.22)}
+  .alert.ok  {background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.22)}
+  .alert.tip {background:rgba(20,184,166,.07);border:1px solid rgba(20,184,166,.22)}
+  .ai{font-size:17px;flex-shrink:0;margin-top:1px}
+
+  /* ── STEPS LIST ── */
+  .sl{list-style:none}
+  .sl li{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+  .sl li:last-child{border-bottom:none}
+  .sd{width:26px;height:26px;background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.32);
+      border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-family:'Fira Code',monospace;font-size:10.5px;color:var(--teal-light);flex-shrink:0;margin-top:2px}
+  .sc strong{display:block;font-size:13.5px;margin-bottom:3px}
+  .sc span{font-size:13px;color:var(--muted)}
+
+  /* ── GRID ── */
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+  .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px}
+  @media(max-width:620px){.g2,.g3{grid-template-columns:1fr}}
+
+  /* ── PIPELINE VISUAL ── */
+  .pipe{display:flex;align-items:center;gap:0;margin:18px 0;flex-wrap:wrap}
+  .pb{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+      padding:12px 16px;text-align:center;min-width:100px}
+  .pb.hi{border-color:rgba(20,184,166,.45);background:rgba(20,184,166,.07)}
+  .pb .pi{font-size:18px;margin-bottom:5px}
+  .pb .pt{font-size:12px;font-weight:600;margin-bottom:2px}
+  .pb .ps{font-family:'Fira Code',monospace;font-size:10px;color:var(--muted)}
+  .pa{font-size:18px;color:var(--teal);padding:0 8px}
+
+  /* ── BUTTONS ── */
+  .brow{display:flex;gap:11px;justify-content:flex-end;margin-top:36px;padding-top:22px;border-top:1px solid var(--border)}
+  .btn{background:linear-gradient(135deg,var(--teal),var(--teal-dark));color:#fff;border:none;
+       padding:10px 26px;border-radius:7px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;
+       font-size:13.5px;cursor:pointer;transition:all .18s;box-shadow:0 4px 14px rgba(20,184,166,.25)}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(20,184,166,.38)}
+  .btn.out{background:transparent;border:1px solid var(--border);color:var(--muted);box-shadow:none}
+  .btn.out:hover{border-color:var(--teal);color:var(--teal-light);box-shadow:none;transform:none}
+
+  /* ── PROGRESS ── */
+  .pgbar{height:2px;background:var(--border);position:fixed;top:0;left:0;right:0;z-index:200}
+  .pgfill{height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));transition:width .28s}
+
+  .footer{border-top:1px solid var(--border);padding:28px 40px;text-align:center;
+          color:var(--muted);font-size:12.5px;margin-top:20px}
+</style>
+</head>
+<body>
+
+<div class="pgbar"><div class="pgfill" id="pg" style="width:11%"></div></div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="pulse"></span>Industry Standard Guide</div>
+    <h1>Serilog Logging<br>in <em>.NET Core</em></h1>
+    <p class="hero-desc">End-to-end guide — from zero to a production-grade structured logging pipeline deployed on Azure with Application Insights.</p>
+    <div class="chips">
+      <span class="chip hi">Serilog 4</span>
+      <span class="chip hi">.NET 8</span>
+      <span class="chip">Structured Logging</span>
+      <span class="chip">Application Insights</span>
+      <span class="chip">Seq</span>
+      <span class="chip a">Azure Deploy</span>
+      <span class="chip">Enrichers</span>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav-wrap">
+  <nav class="nav">
+    <button class="nb on" onclick="go(0)">01 · Overview</button>
+    <button class="nb"    onclick="go(1)">02 · Prerequisites</button>
+    <button class="nb"    onclick="go(2)">03 · Setup</button>
+    <button class="nb"    onclick="go(3)">04 · The Code</button>
+    <button class="nb"    onclick="go(4)">05 · Sinks & Levels</button>
+    <button class="nb"    onclick="go(5)">06 · Local Test</button>
+    <button class="nb"    onclick="go(6)">07 · Azure Deploy</button>
+    <button class="nb"    onclick="go(7)">08 · Utilize</button>
+    <button class="nb"    onclick="go(8)">09 · Best Practices</button>
+  </nav>
+</div>
+
+<div class="wrap">
+
+<!-- ══ 0 · OVERVIEW ═══════════════════════════════════════════ -->
+<div class="sec on" id="s0">
+  <div class="sh">
+    <div class="snum">📋</div>
+    <div class="stitle"><h2>What is Serilog?</h2><p>Why structured logging matters in production .NET apps</p></div>
+  </div>
+
+  <!-- Traditional vs Structured -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px">
+    <div style="padding:20px 22px;background:rgba(248,113,113,.05);border-right:1px solid var(--border)">
+      <h4 style="color:var(--red);font-size:13px;font-weight:700;margin-bottom:12px">❌ Traditional string logging</h4>
+      <div style="font-family:'Fira Code',monospace;font-size:12px;line-height:1.8;color:var(--muted)">
+        <div>2024-01-15 10:23:41 INFO</div>
+        <div>Order 1042 placed by</div>
+        <div>user john@acme.com</div>
+        <div>total $249.99</div>
+      </div>
+      <div style="font-size:12px;color:var(--red);margin-top:10px">Unsearchable · unqueryable · just text</div>
+    </div>
+    <div style="padding:20px 22px;background:rgba(20,184,166,.05)">
+      <h4 style="color:var(--teal-light);font-size:13px;font-weight:700;margin-bottom:12px">✅ Structured with Serilog</h4>
+      <div style="font-family:'Fira Code',monospace;font-size:12px;line-height:1.8;color:var(--muted)">
+        <div><span style="color:var(--teal-light)">{</span></div>
+        <div>&nbsp;&nbsp;<span style="color:var(--blue)">"OrderId"</span>: <span style="color:var(--amber)">1042</span>,</div>
+        <div>&nbsp;&nbsp;<span style="color:var(--blue)">"UserEmail"</span>: <span style="color:var(--green)">"john@acme.com"</span>,</div>
+        <div>&nbsp;&nbsp;<span style="color:var(--blue)">"Total"</span>: <span style="color:var(--amber)">249.99</span>,</div>
+        <div>&nbsp;&nbsp;<span style="color:var(--blue)">"Level"</span>: <span style="color:var(--green)">"Information"</span></div>
+        <div><span style="color:var(--teal-light)">}</span></div>
+      </div>
+      <div style="font-size:12px;color:var(--green);margin-top:10px">Queryable · filterable · alertable</div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card"><h3><span class="ico t">📊</span>Structured Output</h3><p>Every log event is a structured object — not a string. Filter by <code style="font-family:'Fira Code',monospace;font-size:12px">OrderId</code>, group by <code style="font-family:'Fira Code',monospace;font-size:12px">UserId</code>, alert on <code style="font-family:'Fira Code',monospace;font-size:12px">StatusCode = 500</code>.</p></div>
+    <div class="card"><h3><span class="ico g">🔌</span>Sink Ecosystem</h3><p>Write to Console, File, Seq, Application Insights, Elasticsearch, SQL, and 60+ other destinations simultaneously with zero code changes.</p></div>
+    <div class="card"><h3><span class="ico a">🏷️</span>Enrichers</h3><p>Automatically attach context to every log: machine name, thread ID, request ID, user ID, environment — with no manual effort in each log call.</p></div>
+    <div class="card"><h3><span class="ico b">⚡</span>ILogger Compatible</h3><p>Serilog plugs into the standard <code style="font-family:'Fira Code',monospace;font-size:12px">Microsoft.Extensions.Logging.ILogger</code> — no refactoring your existing controller code.</p></div>
+  </div>
+
+  <div class="card">
+    <h3>Logging Pipeline — How Serilog Works</h3>
+    <div class="pipe">
+      <div class="pb hi"><div class="pi">⌨️</div><div class="pt">Log Event</div><div class="ps">_logger.Log()</div></div>
+      <div class="pa">→</div>
+      <div class="pb hi"><div class="pi">🏷️</div><div class="pt">Enrichers</div><div class="ps">Add context</div></div>
+      <div class="pa">→</div>
+      <div class="pb hi"><div class="pi">🔽</div><div class="pt">Filters</div><div class="ps">Min level</div></div>
+      <div class="pa">→</div>
+      <div class="pb"><div class="pi">🖥️</div><div class="pt">Console</div><div class="ps">Sink</div></div>
+      <div class="pa">+</div>
+      <div class="pb"><div class="pi">📁</div><div class="pt">File</div><div class="ps">Sink</div></div>
+      <div class="pa">+</div>
+      <div class="pb"><div class="pi">☁️</div><div class="pt">Azure AI</div><div class="ps">Sink</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Log Levels — What Each One Means</h3>
+    <div class="log-lines">
+      <div class="ll"><span class="lvl vrb">VERBOSE</span><span class="msg" style="color:var(--muted)">Tracking every step of an algorithm — dev only, never production</span></div>
+      <div class="ll"><span class="lvl dbg">DEBUG</span><span class="msg" style="color:var(--muted)">Variable values, internal decisions — useful during development</span></div>
+      <div class="ll"><span class="lvl inf">INFO</span><span class="msg">Normal application flow — user logged in, order placed, email sent</span></div>
+      <div class="ll"><span class="lvl wrn">WARNING</span><span class="msg" style="color:var(--amber)">Unexpected but handled — retry succeeded, deprecated API used</span></div>
+      <div class="ll"><span class="lvl err">ERROR</span><span class="msg" style="color:var(--red)">Operation failed — exception caught, request rejected, DB error</span></div>
+      <div class="ll"><span class="lvl ftl">FATAL</span><span class="msg" style="color:#FF4444">Application cannot continue — alert and wake someone up now</span></div>
+    </div>
+  </div>
+
+  <div class="brow"><button class="btn" onclick="go(1)">Next: Prerequisites →</button></div>
+</div>
+
+<!-- ══ 1 · PREREQUISITES ══════════════════════════════════════ -->
+<div class="sec" id="s1">
+  <div class="sh">
+    <div class="snum">01</div>
+    <div class="stitle"><h2>Prerequisites</h2><p>Tools you need before writing a single line of code</p></div>
+  </div>
+
+  <ul class="sl">
+    <li><div class="sd">1</div><div class="sc"><strong>.NET 8 SDK</strong><span>Download from <strong>dot.net/download</strong>. Verify: <code style="font-family:'Fira Code',monospace;background:var(--bg3);padding:1px 7px;border-radius:3px;font-size:12px">dotnet --version</code> → should return 8.x.x</span></div></li>
+    <li><div class="sd">2</div><div class="sc"><strong>Visual Studio Code</strong><span>Install the <strong>C# Dev Kit</strong> and <strong>REST Client</strong> extensions. Gives full IntelliSense, debugging, and HTTP test support.</span></div></li>
+    <li><div class="sd">3</div><div class="sc"><strong>Seq (Optional — Local Log Viewer)</strong><span>Free for local dev: <strong>datalust.co/seq</strong>. Or run in Docker: <code style="font-family:'Fira Code',monospace;background:var(--bg3);padding:1px 7px;border-radius:3px;font-size:12px">docker run -d -p 5341:80 datalust/seq</code>. The best way to visualise structured logs locally.</span></div></li>
+    <li><div class="sd">4</div><div class="sc"><strong>Azure Account (Free)</strong><span>Sign up at <strong>portal.azure.com</strong>. We'll use Azure App Service and Application Insights for cloud logging.</span></div></li>
+    <li><div class="sd">5</div><div class="sc"><strong>Azure CLI (Optional)</strong><span>Install from <strong>docs.microsoft.com/cli/azure</strong>. Enables terminal-based resource creation and deployment.</span></div></li>
+  </ul>
+
+  <div class="alert tip"><span class="ai">💡</span><span><strong>Key NuGet packages we use:</strong> <code style="font-family:'Fira Code',monospace;font-size:12px">Serilog.AspNetCore</code> (core), <code style="font-family:'Fira Code',monospace;font-size:12px">Serilog.Sinks.Console</code>, <code style="font-family:'Fira Code',monospace;font-size:12px">Serilog.Sinks.File</code>, <code style="font-family:'Fira Code',monospace;font-size:12px">Serilog.Sinks.ApplicationInsights</code>, and <code style="font-family:'Fira Code',monospace;font-size:12px">Serilog.Enrichers.Environment</code>.</span></div>
+
+  <div class="cb">
+    <div class="ch"><span class="cl">BASH · Verify Tools</span></div>
+    <pre><span class="cm"># Verify .NET SDK</span>
+dotnet <span class="at">--version</span>     <span class="cm"># 8.x.x</span>
+
+<span class="cm"># Run Seq locally with Docker (optional)</span>
+docker run <span class="at">-d</span> --name seq <span class="at">-e</span> ACCEPT_EULA=Y <span class="at">-p</span> <span class="nm">5341</span>:<span class="nm">80</span> datalust/seq
+<span class="cm"># Open http://localhost:5341 to view logs</span></pre>
+  </div>
+
+  <div class="brow"><button class="btn out" onclick="go(0)">← Back</button><button class="btn" onclick="go(2)">Next: Setup →</button></div>
+</div>
+
+<!-- ══ 2 · SETUP ══════════════════════════════════════════════ -->
+<div class="sec" id="s2">
+  <div class="sh">
+    <div class="snum">02</div>
+    <div class="stitle"><h2>Project Setup</h2><p>Create the project and install all Serilog packages</p></div>
+  </div>
+
+  <div class="card"><h3><span class="ico t">🛠️</span>Step 1 — Create a Web API Project</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">BASH · Create & Install</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="cm"># Create ASP.NET Core Web API project</span>
+dotnet <span class="fn">new</span> webapi <span class="at">-n</span> OrderApi <span class="at">--use-controllers</span>
+<span class="fn">cd</span> OrderApi
+
+<span class="cm"># Core Serilog package for ASP.NET Core</span>
+dotnet <span class="fn">add</span> package Serilog.AspNetCore
+
+<span class="cm"># Sinks — where logs are written</span>
+dotnet <span class="fn">add</span> package Serilog.Sinks.Console
+dotnet <span class="fn">add</span> package Serilog.Sinks.File
+dotnet <span class="fn">add</span> package Serilog.Sinks.Seq
+dotnet <span class="fn">add</span> package Serilog.Sinks.ApplicationInsights
+
+<span class="cm"># Enrichers — context added to every log event</span>
+dotnet <span class="fn">add</span> package Serilog.Enrichers.Environment
+dotnet <span class="fn">add</span> package Serilog.Enrichers.Thread
+dotnet <span class="fn">add</span> package Serilog.Enrichers.Process
+
+<span class="cm"># Open in VS Code</span>
+code .</pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico a">⚙️</span>Step 2 — appsettings.json Configuration</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">JSON · appsettings.json</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre>{
+  <span class="at">"Serilog"</span>: {
+    <span class="at">"Using"</span>: [<span class="st">"Serilog.Sinks.Console"</span>, <span class="st">"Serilog.Sinks.File"</span>],
+    <span class="at">"MinimumLevel"</span>: {
+      <span class="at">"Default"</span>: <span class="st">"Information"</span>,
+      <span class="at">"Override"</span>: {
+        <span class="at">"Microsoft"</span>: <span class="st">"Warning"</span>,        <span class="cm">// suppress noisy framework logs</span>
+        <span class="at">"Microsoft.Hosting.Lifetime"</span>: <span class="st">"Information"</span>,
+        <span class="at">"System"</span>: <span class="st">"Warning"</span>
+      }
+    },
+    <span class="at">"WriteTo"</span>: [
+      {
+        <span class="at">"Name"</span>: <span class="st">"Console"</span>,
+        <span class="at">"Args"</span>: {
+          <span class="at">"outputTemplate"</span>: <span class="st">"[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}"</span>
+        }
+      },
+      {
+        <span class="at">"Name"</span>: <span class="st">"File"</span>,
+        <span class="at">"Args"</span>: {
+          <span class="at">"path"</span>: <span class="st">"logs/orderapi-.log"</span>,
+          <span class="at">"rollingInterval"</span>: <span class="st">"Day"</span>,
+          <span class="at">"retainedFileCountLimit"</span>: <span class="nm">7</span>,
+          <span class="at">"outputTemplate"</span>: <span class="st">"[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}"</span>
+        }
+      }
+    ],
+    <span class="at">"Enrich"</span>: [<span class="st">"FromLogContext"</span>, <span class="st">"WithMachineName"</span>, <span class="st">"WithThreadId"</span>],
+    <span class="at">"Properties"</span>: {
+      <span class="at">"Application"</span>: <span class="st">"OrderApi"</span>,
+      <span class="at">"Environment"</span>: <span class="st">"Development"</span>
+    }
+  },
+  <span class="at">"ApplicationInsights"</span>: {
+    <span class="at">"ConnectionString"</span>: <span class="st">""</span>   <span class="cm">// Set in Azure App Settings</span>
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico g">📁</span>Generated File Structure</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">FILE TREE</span></div>
+      <pre><span class="st">OrderApi/</span>
+├── Controllers/
+│   ├── <span class="fn">OrdersController.cs</span>      <span class="cm">← HTTP endpoints with structured logging</span>
+│   └── <span class="fn">HealthController.cs</span>       <span class="cm">← Health check endpoint</span>
+├── Services/
+│   └── <span class="fn">OrderService.cs</span>           <span class="cm">← Business logic with contextual logging</span>
+├── Middleware/
+│   └── <span class="fn">RequestLoggingMiddleware.cs</span> <span class="cm">← Log every HTTP request/response</span>
+├── <span class="fn">Program.cs</span>                   <span class="cm">← Serilog bootstrap & configuration</span>
+├── <span class="fn">appsettings.json</span>             <span class="cm">← Log levels & sink config</span>
+├── <span class="fn">appsettings.Production.json</span>  <span class="cm">← Production overrides</span>
+└── <span class="fn">logs/</span>                        <span class="cm">← Rolling log files (in .gitignore)</span></pre>
+    </div>
+  </div>
+
+  <div class="brow"><button class="btn out" onclick="go(1)">← Back</button><button class="btn" onclick="go(3)">Next: The Code →</button></div>
+</div>
+
+<!-- ══ 3 · THE CODE ═══════════════════════════════════════════ -->
+<div class="sec" id="s3">
+  <div class="sh">
+    <div class="snum">03</div>
+    <div class="stitle"><h2>Industry-Standard Serilog Code</h2><p>Program.cs bootstrap, enrichers, request logging, and structured log calls</p></div>
+  </div>
+
+  <div class="card"><h3><span class="ico t">🚀</span>Program.cs — Bootstrap Serilog Early</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">C# · Program.cs</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="kw">using</span> Serilog;
+
+<span class="cm">// ── Bootstrap logger (captures startup errors before config loads) ─</span>
+Log.Logger = <span class="kw">new</span> <span class="ty">LoggerConfiguration</span>()
+    .<span class="fn">WriteTo</span>.<span class="fn">Console</span>()
+    .<span class="fn">CreateBootstrapLogger</span>();
+
+<span class="kw">try</span>
+{
+    Log.<span class="fn">Information</span>(<span class="st">"Starting OrderApi"</span>);
+
+    <span class="kw">var</span> builder = WebApplication.<span class="fn">CreateBuilder</span>(args);
+
+    <span class="cm">// ── Replace default logger with Serilog ────────────────────────</span>
+    builder.Host.<span class="fn">UseSerilog</span>((ctx, services, config) => config
+        .<span class="fn">ReadFrom</span>.<span class="fn">Configuration</span>(ctx.Configuration)   <span class="cm">// reads appsettings.json</span>
+        .<span class="fn">ReadFrom</span>.<span class="fn">Services</span>(services)                  <span class="cm">// allows DI in sinks</span>
+        .<span class="fn">Enrich</span>.<span class="fn">FromLogContext</span>()                      <span class="cm">// LogContext.PushProperty</span>
+        .<span class="fn">Enrich</span>.<span class="fn">WithMachineName</span>()
+        .<span class="fn">Enrich</span>.<span class="fn">WithThreadId</span>()
+        .<span class="fn">WriteTo</span>.<span class="fn">ApplicationInsights</span>(
+            services.<span class="fn">GetRequiredService</span>&lt;<span class="ty">TelemetryConfiguration</span>&gt;(),
+            <span class="ty">TelemetryConverter</span>.Traces));
+
+    builder.Services.<span class="fn">AddControllers</span>();
+    builder.Services.<span class="fn">AddApplicationInsightsTelemetry</span>();
+    builder.Services.<span class="fn">AddScoped</span>&lt;<span class="ty">IOrderService</span>, <span class="ty">OrderService</span>&gt;();
+
+    <span class="kw">var</span> app = builder.<span class="fn">Build</span>();
+
+    <span class="cm">// ── Serilog HTTP request logging (replaces default middleware) ──</span>
+    app.<span class="fn">UseSerilogRequestLogging</span>(options =>
+    {
+        options.MessageTemplate =
+            <span class="st">"HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms"</span>;
+        options.EnrichDiagnosticContext = (diag, http) =>
+        {
+            diag.<span class="fn">Set</span>(<span class="st">"RequestHost"</span>, http.Request.Host.Value);
+            diag.<span class="fn">Set</span>(<span class="st">"UserAgent"</span>,   http.Request.Headers[<span class="st">"User-Agent"</span>]);
+        };
+    });
+
+    app.<span class="fn">MapControllers</span>();
+    app.<span class="fn">Run</span>();
+}
+<span class="kw">catch</span> (<span class="ty">Exception</span> ex) <span class="kw">when</span> (ex <span class="kw">is not</span> <span class="ty">HostAbortedException</span>)
+{
+    Log.<span class="fn">Fatal</span>(ex, <span class="st">"OrderApi terminated unexpectedly"</span>);
+}
+<span class="kw">finally</span>
+{
+    Log.<span class="fn">CloseAndFlush</span>();  <span class="cm">// always flush before exit</span>
+}</pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico g">📦</span>OrderService.cs — Structured Log Calls</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">C# · OrderService.cs</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="kw">namespace</span> <span class="ty">OrderApi.Services</span>;
+
+<span class="kw">public record</span> <span class="ty">Order</span>(<span class="kw">int</span> Id, <span class="kw">string</span> CustomerEmail, <span class="kw">decimal</span> Total, <span class="kw">string</span> Status);
+
+<span class="kw">public class</span> <span class="ty">OrderService</span> : <span class="ty">IOrderService</span>
+{
+    <span class="kw">private readonly</span> <span class="ty">ILogger</span>&lt;<span class="ty">OrderService</span>&gt; _logger;
+
+    <span class="kw">public</span> <span class="fn">OrderService</span>(<span class="ty">ILogger</span>&lt;<span class="ty">OrderService</span>&gt; logger) => _logger = logger;
+
+    <span class="kw">public async</span> <span class="ty">Task</span>&lt;<span class="ty">Order</span>&gt; <span class="fn">PlaceOrderAsync</span>(<span class="ty">Order</span> order)
+    {
+        <span class="cm">// ✅ Structured: OrderId and CustomerEmail are queryable properties</span>
+        _logger.<span class="fn">LogInformation</span>(
+            <span class="st">"Placing order {OrderId} for {CustomerEmail} total {Total:C}"</span>,
+            order.Id, order.CustomerEmail, order.Total);
+
+        <span class="kw">try</span>
+        {
+            <span class="cm">// simulate DB save</span>
+            <span class="kw">await</span> <span class="ty">Task</span>.<span class="fn">Delay</span>(<span class="nm">50</span>);
+
+            <span class="cm">// Push additional context for all logs in this scope</span>
+            <span class="kw">using var</span> scope = _logger.<span class="fn">BeginScope</span>(<span class="kw">new</span> <span class="ty">Dictionary</span>&lt;<span class="kw">string</span>, <span class="kw">object</span>&gt;
+            {
+                [<span class="st">"OrderId"</span>]       = order.Id,
+                [<span class="st">"CustomerEmail"</span>] = order.CustomerEmail
+            });
+
+            <span class="kw">var</span> confirmed = order <span class="kw">with</span> { Status = <span class="st">"Confirmed"</span> };
+            _logger.<span class="fn">LogInformation</span>(
+                <span class="st">"Order {OrderId} confirmed successfully"</span>, confirmed.Id);
+
+            <span class="kw">return</span> confirmed;
+        }
+        <span class="kw">catch</span> (<span class="ty">Exception</span> ex)
+        {
+            <span class="cm">// ✅ Exception is captured as a structured property — not just a string</span>
+            _logger.<span class="fn">LogError</span>(ex,
+                <span class="st">"Failed to place order {OrderId} for {CustomerEmail}"</span>,
+                order.Id, order.CustomerEmail);
+            <span class="kw">throw</span>;
+        }
+    }
+
+    <span class="kw">public async</span> <span class="ty">Task</span> <span class="fn">CancelOrderAsync</span>(<span class="kw">int</span> orderId, <span class="kw">string</span> reason)
+    {
+        _logger.<span class="fn">LogWarning</span>(
+            <span class="st">"Order {OrderId} cancelled — Reason: {CancellationReason}"</span>,
+            orderId, reason);
+
+        <span class="kw">await</span> <span class="ty">Task</span>.<span class="fn">Delay</span>(<span class="nm">20</span>);
+    }
+}</pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico a">🌐</span>OrdersController.cs — Request Context Enrichment</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">C# · OrdersController.cs</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre>[<span class="ty">ApiController</span>]
+[<span class="ty">Route</span>(<span class="st">"api/[controller]"</span>)]
+<span class="kw">public class</span> <span class="ty">OrdersController</span> : <span class="ty">ControllerBase</span>
+{
+    <span class="kw">private readonly</span> <span class="ty">IOrderService</span> _orders;
+    <span class="kw">private readonly</span> <span class="ty">ILogger</span>&lt;<span class="ty">OrdersController</span>&gt; _logger;
+
+    <span class="kw">public</span> <span class="fn">OrdersController</span>(<span class="ty">IOrderService</span> orders,
+                             <span class="ty">ILogger</span>&lt;<span class="ty">OrdersController</span>&gt; logger)
+        => (_orders, _logger) = (orders, logger);
+
+    [<span class="ty">HttpPost</span>]
+    <span class="kw">public async</span> <span class="ty">Task</span>&lt;<span class="ty">IActionResult</span>&gt; <span class="fn">PlaceOrder</span>([<span class="ty">FromBody</span>] <span class="ty">Order</span> order)
+    {
+        <span class="cm">// Enrich ALL logs in this request with CorrelationId</span>
+        <span class="kw">using</span> (<span class="ty">LogContext</span>.<span class="fn">PushProperty</span>(<span class="st">"CorrelationId"</span>,
+               HttpContext.TraceIdentifier))
+        {
+            _logger.<span class="fn">LogInformation</span>(
+                <span class="st">"POST /orders received for {CustomerEmail}"</span>,
+                order.CustomerEmail);
+
+            <span class="kw">var</span> confirmed = <span class="kw">await</span> _orders.<span class="fn">PlaceOrderAsync</span>(order);
+            <span class="kw">return</span> CreatedAtAction(<span class="kw">nameof</span>(<span class="fn">GetOrder</span>),
+                   <span class="kw">new</span> { id = confirmed.Id }, confirmed);
+        }
+    }
+
+    [<span class="ty">HttpGet</span>(<span class="st">"{id}"</span>)]
+    <span class="kw">public</span> <span class="ty">IActionResult</span> <span class="fn">GetOrder</span>(<span class="kw">int</span> id)
+    {
+        _logger.<span class="fn">LogDebug</span>(<span class="st">"Fetching order {OrderId}"</span>, id);
+        <span class="cm">// ... return order</span>
+        <span class="kw">return</span> Ok(<span class="kw">new</span> { id });
+    }
+}</pre>
+    </div>
+  </div>
+
+  <div class="alert tip"><span class="ai">💡</span><span><strong>Key rule:</strong> Always use <strong>message templates with named properties</strong> like <code style="font-family:'Fira Code',monospace;font-size:12px">"Order {OrderId} placed"</code> — never string interpolation like <code style="font-family:'Fira Code',monospace;font-size:12px">$"Order {id} placed"</code>. Templates are the heart of structured logging — they preserve the property separately so you can filter by it.</span></div>
+
+  <div class="brow"><button class="btn out" onclick="go(2)">← Back</button><button class="btn" onclick="go(4)">Next: Sinks & Levels →</button></div>
+</div>
+
+<!-- ══ 4 · SINKS & LEVELS ═══════════════════════════════════════ -->
+<div class="sec" id="s4">
+  <div class="sh">
+    <div class="snum">04</div>
+    <div class="stitle"><h2>Sinks & Log Levels</h2><p>Where logs go and how to control the noise</p></div>
+  </div>
+
+  <div class="sink-grid">
+    <div class="sink-card">
+      <div class="sink-icon">🖥️</div>
+      <div class="sink-name">Console</div>
+      <div class="sink-pkg">Serilog.Sinks.Console</div>
+      <div class="sink-desc">Human-readable output during development. Coloured by log level. Zero config needed.</div>
+    </div>
+    <div class="sink-card">
+      <div class="sink-icon">📁</div>
+      <div class="sink-name">File</div>
+      <div class="sink-pkg">Serilog.Sinks.File</div>
+      <div class="sink-desc">Rolling daily log files. Auto-deletes old files. JSON or plain text output. Essential for on-premise.</div>
+    </div>
+    <div class="sink-card">
+      <div class="sink-icon">🔍</div>
+      <div class="sink-name">Seq</div>
+      <div class="sink-pkg">Serilog.Sinks.Seq</div>
+      <div class="sink-desc">Free local structured log viewer. Query logs like a database. Best dev experience for Serilog.</div>
+    </div>
+    <div class="sink-card">
+      <div class="sink-icon">☁️</div>
+      <div class="sink-name">Application Insights</div>
+      <div class="sink-pkg">Serilog.Sinks.ApplicationInsights</div>
+      <div class="sink-desc">Azure's cloud telemetry platform. Live metrics, alerts, distributed tracing. Production standard.</div>
+    </div>
+    <div class="sink-card">
+      <div class="sink-icon">📧</div>
+      <div class="sink-name">Email</div>
+      <div class="sink-pkg">Serilog.Sinks.Email</div>
+      <div class="sink-desc">Send FATAL errors to your inbox immediately. Pair with minimum level filter for fatal-only alerts.</div>
+    </div>
+    <div class="sink-card">
+      <div class="sink-icon">🗄️</div>
+      <div class="sink-name">MS SQL Server</div>
+      <div class="sink-pkg">Serilog.Sinks.MSSqlServer</div>
+      <div class="sink-desc">Write structured logs to a SQL table. Queryable with standard SQL. Good for enterprise audit trails.</div>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico t">🎯</span>Per-Sink Log Level Filtering</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">C# · Level Filtering per Sink</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="cm">// Different sinks can have different minimum levels</span>
+.<span class="fn">WriteTo</span>.<span class="fn">Console</span>(restrictedToMinimumLevel: <span class="ty">LogEventLevel</span>.Debug)
+.<span class="fn">WriteTo</span>.<span class="fn">File</span>(<span class="st">"logs/app-.log"</span>,
+    rollingInterval: <span class="ty">RollingInterval</span>.Day,
+    restrictedToMinimumLevel: <span class="ty">LogEventLevel</span>.Warning)  <span class="cm">// only WARN+ to file</span>
+.<span class="fn">WriteTo</span>.<span class="fn">Seq</span>(<span class="st">"http://localhost:5341"</span>,
+    restrictedToMinimumLevel: <span class="ty">LogEventLevel</span>.Verbose)   <span class="cm">// all events to Seq</span>
+.<span class="fn">WriteTo</span>.<span class="fn">ApplicationInsights</span>(telemetryConfig,
+    <span class="ty">TelemetryConverter</span>.Traces,
+    restrictedToMinimumLevel: <span class="ty">LogEventLevel</span>.Information) <span class="cm">// INFO+ to Azure</span></pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico g">🏷️</span>Enrichers — Auto-Context on Every Event</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">C# · Enricher Configuration</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="cm">// Every log event automatically gets these properties:</span>
+.<span class="fn">Enrich</span>.<span class="fn">FromLogContext</span>()        <span class="cm">// LogContext.PushProperty() values</span>
+.<span class="fn">Enrich</span>.<span class="fn">WithMachineName</span>()       <span class="cm">// MachineName: "prod-server-01"</span>
+.<span class="fn">Enrich</span>.<span class="fn">WithThreadId</span>()           <span class="cm">// ThreadId: 42</span>
+.<span class="fn">Enrich</span>.<span class="fn">WithProcessId</span>()          <span class="cm">// ProcessId: 8742</span>
+.<span class="fn">Enrich</span>.<span class="fn">WithProperty</span>(<span class="st">"Application"</span>, <span class="st">"OrderApi"</span>)
+.<span class="fn">Enrich</span>.<span class="fn">WithProperty</span>(<span class="st">"Environment"</span>,
+    Environment.<span class="fn">GetEnvironmentVariable</span>(<span class="st">"ASPNETCORE_ENVIRONMENT"</span>))
+
+<span class="cm">// Custom enricher — add request user to every log in an HTTP context</span>
+.<span class="fn">Enrich</span>.<span class="fn">WithProperty</span>(<span class="st">"Version"</span>,
+    Assembly.<span class="fn">GetExecutingAssembly</span>().<span class="fn">GetName</span>().Version?.ToString())</pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico a">📄</span>Output Templates — Control Log Format</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">JSON / Console Templates</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="cm">// Human-readable console (development)</span>
+outputTemplate: <span class="st">"[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}"</span>
+
+<span class="cm">// Compact JSON for file/cloud sinks (production)</span>
+.<span class="fn">WriteTo</span>.<span class="fn">File</span>(<span class="kw">new</span> <span class="ty">CompactJsonFormatter</span>(), <span class="st">"logs/app-.json"</span>)
+
+<span class="cm">// Example compact JSON output:</span>
+<span class="cm">// {"@t":"2024-01-15T10:23:41","@m":"Order 1042 placed",</span>
+<span class="cm">//  "@l":"Information","OrderId":1042,"CustomerEmail":"john@acme.com",</span>
+<span class="cm">//  "MachineName":"prod-01","Application":"OrderApi"}</span></pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico b">🔕</span>Suppressing Noisy Framework Logs</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">JSON · appsettings.json</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="st">"MinimumLevel"</span>: {
+  <span class="at">"Default"</span>: <span class="st">"Information"</span>,
+  <span class="at">"Override"</span>: {
+    <span class="at">"Microsoft"</span>:                  <span class="st">"Warning"</span>,  <span class="cm">// all MS namespaces</span>
+    <span class="at">"Microsoft.AspNetCore"</span>:        <span class="st">"Warning"</span>,  <span class="cm">// ASP.NET Core framework</span>
+    <span class="at">"Microsoft.Hosting.Lifetime"</span>: <span class="st">"Information"</span>, <span class="cm">// keep startup messages</span>
+    <span class="at">"Microsoft.EntityFrameworkCore"</span>: <span class="st">"Warning"</span>, <span class="cm">// suppress EF query logs</span>
+    <span class="at">"System"</span>:                      <span class="st">"Warning"</span>   <span class="cm">// System namespace</span>
+  }
+}</pre>
+    </div>
+  </div>
+
+  <!-- Live log sample -->
+  <div class="log-demo">
+    <div class="log-demo-head">SAMPLE LOG OUTPUT — OrderApi running</div>
+    <div class="log-lines">
+      <div class="ll"><span class="ts">10:23:38</span><span class="lvl inf">INF</span><span class="msg">Starting OrderApi</span></div>
+      <div class="ll"><span class="ts">10:23:39</span><span class="lvl inf">INF</span><span class="msg">Now listening on: https://localhost:5001</span></div>
+      <div class="ll"><span class="ts">10:23:41</span><span class="lvl inf">INF</span><span class="msg">HTTP POST /api/orders responded 201 in 52.3 ms</span><span class="prop">{ RequestHost: localhost, StatusCode: 201 }</span></div>
+      <div class="ll"><span class="ts">10:23:41</span><span class="lvl inf">INF</span><span class="msg">Placing order 1042 for john@acme.com total $249.99</span><span class="prop">{ OrderId: 1042 }</span></div>
+      <div class="ll"><span class="ts">10:23:41</span><span class="lvl inf">INF</span><span class="msg">Order 1042 confirmed successfully</span></div>
+      <div class="ll"><span class="ts">10:23:55</span><span class="lvl wrn">WRN</span><span class="msg" style="color:var(--amber)">Order 1087 cancelled — Reason: OutOfStock</span><span class="prop">{ OrderId: 1087 }</span></div>
+      <div class="ll"><span class="ts">10:24:10</span><span class="lvl err">ERR</span><span class="msg" style="color:var(--red)">Failed to place order 1099 for bob@co.com</span><span class="prop">{ OrderId: 1099, ExceptionType: DbException }</span></div>
+    </div>
+  </div>
+
+  <div class="brow"><button class="btn out" onclick="go(3)">← Back</button><button class="btn" onclick="go(5)">Next: Local Test →</button></div>
+</div>
+
+<!-- ══ 5 · LOCAL TEST ════════════════════════════════════════════ -->
+<div class="sec" id="s5">
+  <div class="sh">
+    <div class="snum">05</div>
+    <div class="stitle"><h2>Run & Test Locally</h2><p>See structured logs in the console, file, and Seq</p></div>
+  </div>
+
+  <div class="card"><h3><span class="ico g">▶️</span>Start the API</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">BASH · Run</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="cm"># Optional — start Seq log viewer</span>
+docker start seq
+<span class="cm"># Open: http://localhost:5341</span>
+
+<span class="cm"># Start the API</span>
+dotnet run
+
+<span class="cm"># API:     https://localhost:5001</span>
+<span class="cm"># Swagger: https://localhost:5001/swagger</span>
+<span class="cm"># Logs:    ./logs/orderapi-YYYYMMDD.log</span></pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico b">🧪</span>Trigger Log Events with curl</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">BASH · Test Logging</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="cm"># POST — triggers Info + scope logs</span>
+curl <span class="at">-X</span> POST https://localhost:<span class="nm">5001</span>/api/orders \
+  <span class="at">-H</span> <span class="st">"Content-Type: application/json"</span> \
+  <span class="at">-d</span> <span class="st">'{"id":1042,"customerEmail":"john@acme.com","total":249.99,"status":"Pending"}'</span>
+
+<span class="cm"># GET — triggers Debug log</span>
+curl https://localhost:<span class="nm">5001</span>/api/orders/<span class="nm">1042</span>
+
+<span class="cm"># Invalid route — triggers Warning</span>
+curl https://localhost:<span class="nm">5001</span>/api/orders/<span class="nm">-1</span>
+
+<span class="cm"># Check log file</span>
+cat logs/orderapi-*.log</pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico a">🔍</span>Query Logs in Seq</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">SEQ QUERY LANGUAGE</span></div>
+      <pre><span class="cm"># Filter by structured property — impossible with plain text logs</span>
+OrderId = <span class="nm">1042</span>
+CustomerEmail = <span class="st">'john@acme.com'</span>
+@Level = <span class="st">'Error'</span>
+StatusCode >= <span class="nm">400</span>
+
+<span class="cm"># Show only errors from the last hour</span>
+@Level = <span class="st">'Error'</span> <span class="kw">and</span> @Timestamp > <span class="kw">Now</span>() - <span class="nm">1h</span>
+
+<span class="cm"># Count orders by customer</span>
+<span class="kw">select</span> <span class="fn">count</span>(*) <span class="kw">from</span> stream
+<span class="kw">where</span> @MessageTemplate <span class="kw">like</span> <span class="st">'%order%'</span>
+<span class="kw">group by</span> CustomerEmail</pre>
+    </div>
+  </div>
+
+  <div class="alert ok"><span class="ai">✅</span><span><strong>Confirm structured logging works:</strong> In Seq or your console output, each log line should show named properties like <code style="font-family:'Fira Code',monospace;font-size:12px">OrderId</code> and <code style="font-family:'Fira Code',monospace;font-size:12px">CustomerEmail</code> as separate fields — not embedded in the message string. That's the difference between logging and <em>structured</em> logging.</span></div>
+
+  <div class="brow"><button class="btn out" onclick="go(4)">← Back</button><button class="btn" onclick="go(6)">Next: Azure Deploy →</button></div>
+</div>
+
+<!-- ══ 6 · AZURE DEPLOY ══════════════════════════════════════════ -->
+<div class="sec" id="s6">
+  <div class="sh">
+    <div class="snum">06</div>
+    <div class="stitle"><h2>Deploy to Azure</h2><p>App Service + Application Insights — production logging pipeline</p></div>
+  </div>
+
+  <div class="card"><h3><span class="ico t">☁️</span>Step 1 — Create Application Insights</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">BASH · Azure CLI</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="cm"># Login</span>
+az login
+
+<span class="cm"># Create resource group</span>
+az group create <span class="at">--name</span> OrderApiRG <span class="at">--location</span> eastus
+
+<span class="cm"># Create Application Insights workspace</span>
+az monitor app-insights component create \
+  <span class="at">--app</span> orderapi-insights \
+  <span class="at">--location</span> eastus \
+  <span class="at">--resource-group</span> OrderApiRG \
+  <span class="at">--kind</span> web
+
+<span class="cm"># Get the connection string</span>
+az monitor app-insights component show \
+  <span class="at">--app</span> orderapi-insights \
+  <span class="at">--resource-group</span> OrderApiRG \
+  <span class="at">--query</span> connectionString <span class="at">-o</span> tsv</pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico g">🚀</span>Step 2 — Deploy API to App Service</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">BASH · App Service</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="cm"># Create App Service plan</span>
+az appservice plan create \
+  <span class="at">--name</span> OrderApiPlan \
+  <span class="at">--resource-group</span> OrderApiRG \
+  <span class="at">--sku</span> F1 <span class="at">--is-linux</span>
+
+<span class="cm"># Create Web App</span>
+az webapp create \
+  <span class="at">--name</span> orderapi-yourname \
+  <span class="at">--resource-group</span> OrderApiRG \
+  <span class="at">--plan</span> OrderApiPlan \
+  <span class="at">--runtime</span> <span class="st">"DOTNETCORE:8.0"</span>
+
+<span class="cm"># Inject Application Insights connection string securely</span>
+az webapp config appsettings set \
+  <span class="at">--name</span> orderapi-yourname \
+  <span class="at">--resource-group</span> OrderApiRG \
+  <span class="at">--settings</span> <span class="st">"ApplicationInsights__ConnectionString=InstrumentationKey=...;IngestionEndpoint=..."</span> \
+             <span class="st">"ASPNETCORE_ENVIRONMENT=Production"</span> \
+             <span class="st">"Serilog__MinimumLevel__Default=Information"</span>
+
+<span class="cm"># Build and deploy</span>
+dotnet publish <span class="at">-c</span> Release <span class="at">-o</span> ./publish
+az webapp deployment source config-zip \
+  <span class="at">--src</span> ./publish.zip \
+  <span class="at">--name</span> orderapi-yourname \
+  <span class="at">--resource-group</span> OrderApiRG</pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico a">📄</span>appsettings.Production.json</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">JSON · Production Config</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre>{
+  <span class="at">"Serilog"</span>: {
+    <span class="at">"Using"</span>: [<span class="st">"Serilog.Sinks.ApplicationInsights"</span>],
+    <span class="at">"MinimumLevel"</span>: {
+      <span class="at">"Default"</span>: <span class="st">"Information"</span>,   <span class="cm">// no Debug/Verbose in prod</span>
+      <span class="at">"Override"</span>: {
+        <span class="at">"Microsoft"</span>: <span class="st">"Warning"</span>,
+        <span class="at">"System"</span>: <span class="st">"Warning"</span>
+      }
+    },
+    <span class="at">"Properties"</span>: {
+      <span class="at">"Application"</span>: <span class="st">"OrderApi"</span>,
+      <span class="at">"Environment"</span>: <span class="st">"Production"</span>
+    }
+  }
+  <span class="cm">// Connection string injected via Azure App Settings at runtime</span>
+}</pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico b">🔁</span>GitHub Actions CI/CD</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">YAML · .github/workflows/deploy.yml</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="at">name:</span> Deploy OrderApi
+<span class="at">on:</span>
+  <span class="at">push:</span>
+    <span class="at">branches:</span> [ main ]
+<span class="at">jobs:</span>
+  <span class="at">deploy:</span>
+    <span class="at">runs-on:</span> ubuntu-latest
+    <span class="at">steps:</span>
+      - <span class="at">uses:</span> actions/checkout@v4
+      - <span class="at">uses:</span> actions/setup-dotnet@v4
+        <span class="at">with:</span>
+          <span class="at">dotnet-version:</span> <span class="st">'8.0.x'</span>
+      - <span class="at">run:</span> dotnet publish -c Release -o ./publish
+      - <span class="at">uses:</span> azure/webapps-deploy@v3
+        <span class="at">with:</span>
+          <span class="at">app-name:</span> orderapi-yourname
+          <span class="at">publish-profile:</span> ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          <span class="at">package:</span> ./publish</pre>
+    </div>
+  </div>
+
+  <div class="alert info"><span class="ai">ℹ️</span><span><strong>View logs in Azure:</strong> Go to Azure Portal → Application Insights → <strong>Logs</strong> (Kusto queries) or <strong>Live Metrics</strong> for real-time log streaming. You can also use <strong>Transaction Search</strong> to find a specific <code style="font-family:'Fira Code',monospace;font-size:12px">OrderId</code> across all events in seconds.</span></div>
+
+  <div class="brow"><button class="btn out" onclick="go(5)">← Back</button><button class="btn" onclick="go(7)">Next: Utilize →</button></div>
+</div>
+
+<!-- ══ 7 · UTILIZE ══════════════════════════════════════════════ -->
+<div class="sec" id="s7">
+  <div class="sh">
+    <div class="snum">07</div>
+    <div class="stitle"><h2>How to Utilize Serilog</h2><p>Advanced patterns — scopes, custom enrichers, audit logs, and alerts</p></div>
+  </div>
+
+  <div class="card"><h3><span class="ico t">🔗</span>Correlation IDs — Trace a Request Across Services</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">C# · Correlation Middleware</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="kw">public class</span> <span class="ty">CorrelationMiddleware</span>(<span class="ty">RequestDelegate</span> next)
+{
+    <span class="kw">public async</span> <span class="ty">Task</span> <span class="fn">InvokeAsync</span>(<span class="ty">HttpContext</span> ctx)
+    {
+        <span class="cm">// Read from incoming header or generate new ID</span>
+        <span class="kw">var</span> correlationId = ctx.Request.Headers[<span class="st">"X-Correlation-ID"</span>]
+            .FirstOrDefault() ?? <span class="ty">Guid</span>.<span class="fn">NewGuid</span>().<span class="fn">ToString</span>(<span class="st">"N"</span>);
+
+        <span class="cm">// Push to ALL logs in this request scope</span>
+        <span class="kw">using</span> (<span class="ty">LogContext</span>.<span class="fn">PushProperty</span>(<span class="st">"CorrelationId"</span>, correlationId))
+        <span class="kw">using</span> (<span class="ty">LogContext</span>.<span class="fn">PushProperty</span>(<span class="st">"UserId"</span>,
+                ctx.User?.Identity?.Name ?? <span class="st">"anonymous"</span>))
+        {
+            ctx.Response.Headers[<span class="st">"X-Correlation-ID"</span>] = correlationId;
+            <span class="kw">await</span> <span class="fn">next</span>(ctx);
+        }
+    }
+}
+
+<span class="cm">// Register in Program.cs</span>
+app.<span class="fn">UseMiddleware</span>&lt;<span class="ty">CorrelationMiddleware</span>&gt;();</pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico g">📋</span>Audit Logging — Separate Sink for Compliance</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">C# · Audit Logger</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="cm">// Create a dedicated audit logger separate from app logger</span>
+<span class="kw">var</span> auditLogger = <span class="kw">new</span> <span class="ty">LoggerConfiguration</span>()
+    .<span class="fn">MinimumLevel</span>.<span class="fn">Information</span>()
+    .<span class="fn">WriteTo</span>.<span class="fn">File</span>(<span class="kw">new</span> <span class="ty">JsonFormatter</span>(), <span class="st">"logs/audit-.json"</span>,
+        rollingInterval: <span class="ty">RollingInterval</span>.Day,
+        retainedFileCountLimit: <span class="nm">365</span>)  <span class="cm">// keep 1 year</span>
+    .<span class="fn">Enrich</span>.<span class="fn">FromLogContext</span>()
+    .<span class="fn">CreateLogger</span>();
+
+<span class="cm">// Register in DI with a named logger</span>
+builder.Services.<span class="fn">AddKeyedSingleton</span>&lt;<span class="ty">ILogger</span>&gt;(<span class="st">"Audit"</span>, auditLogger);
+
+<span class="cm">// Use in a service</span>
+<span class="kw">using</span> (<span class="ty">LogContext</span>.<span class="fn">PushProperty</span>(<span class="st">"AuditAction"</span>, <span class="st">"OrderPlaced"</span>))
+<span class="kw">using</span> (<span class="ty">LogContext</span>.<span class="fn">PushProperty</span>(<span class="st">"UserId"</span>, userId))
+{
+    _auditLogger.<span class="fn">Information</span>(
+        <span class="st">"Order {OrderId} placed by {UserId} for {Total:C}"</span>,
+        order.Id, userId, order.Total);
+}</pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico a">🔔</span>Azure Application Insights Alerts</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">KUSTO · Query Logs in Azure</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="cm">// In Azure Monitor → Logs (Kusto Query Language)</span>
+
+<span class="cm">// Find all error logs with structured property</span>
+traces
+| where severityLevel >= <span class="nm">3</span>   <span class="cm">// 3 = Error, 4 = Fatal</span>
+| where customDimensions.OrderId != <span class="st">""</span>
+| project timestamp, message, customDimensions.OrderId,
+          customDimensions.CustomerEmail, operation_Id
+| order by timestamp desc
+
+<span class="cm">// Alert: error rate &gt; 10 in 5 minutes → page on-call</span>
+traces
+| where severityLevel == <span class="nm">3</span>
+| summarize ErrorCount = count() by bin(timestamp, <span class="nm">5</span>m)
+| where ErrorCount > <span class="nm">10</span>
+
+<span class="cm">// Trace a request by CorrelationId across all log events</span>
+traces
+| where customDimensions.CorrelationId == <span class="st">"abc123def456"</span>
+| order by timestamp asc</pre>
+    </div>
+  </div>
+
+  <div class="card"><h3><span class="ico b">⚡</span>Custom Enricher — Add User Context Automatically</h3>
+    <div class="cb" style="margin-top:12px">
+      <div class="ch"><span class="cl">C# · Custom ILogEventEnricher</span><button class="cpbtn" onclick="cp(this)">Copy</button></div>
+      <pre><span class="kw">public class</span> <span class="ty">UserContextEnricher</span>(<span class="ty">IHttpContextAccessor</span> accessor)
+    : <span class="ty">ILogEventEnricher</span>
+{
+    <span class="kw">public void</span> <span class="fn">Enrich</span>(<span class="ty">LogEvent</span> logEvent, <span class="ty">ILogEventPropertyFactory</span> factory)
+    {
+        <span class="kw">var</span> user = accessor?.HttpContext?.User;
+        <span class="kw">if</span> (user?.Identity?.IsAuthenticated == <span class="kw">true</span>)
+        {
+            logEvent.<span class="fn">AddPropertyIfAbsent</span>(
+                factory.<span class="fn">CreateProperty</span>(<span class="st">"UserId"</span>,
+                    user.<span class="fn">FindFirst</span>(<span class="st">"sub"</span>)?.Value));
+            logEvent.<span class="fn">AddPropertyIfAbsent</span>(
+                factory.<span class="fn">CreateProperty</span>(<span class="st">"UserEmail"</span>,
+                    user.<span class="fn">FindFirst</span>(<span class="st">"email"</span>)?.Value));
+        }
+    }
+}
+
+<span class="cm">// Register in Program.cs</span>
+builder.Services.<span class="fn">AddHttpContextAccessor</span>();
+<span class="cm">// then in UseSerilog():</span>
+.<span class="fn">Enrich</span>.<span class="fn">With</span>(<span class="kw">new</span> <span class="ty">UserContextEnricher</span>(
+    app.Services.<span class="fn">GetRequiredService</span>&lt;<span class="ty">IHttpContextAccessor</span>&gt;()))</pre>
+    </div>
+  </div>
+
+  <div class="brow"><button class="btn out" onclick="go(6)">← Back</button><button class="btn" onclick="go(8)">Next: Best Practices →</button></div>
+</div>
+
+<!-- ══ 8 · BEST PRACTICES ════════════════════════════════════════ -->
+<div class="sec" id="s8">
+  <div class="sh">
+    <div class="snum">08</div>
+    <div class="stitle"><h2>Best Practices</h2><p>What separates amateur logging from production-grade observability</p></div>
+  </div>
+
+  <div class="g2">
+    <div class="card"><h3><span class="ico t">✍️</span>Use Message Templates</h3><p>Always write <code style="font-family:'Fira Code',monospace;font-size:12px">_logger.LogInformation("Order {OrderId}", id)</code> — never <code style="font-family:'Fira Code',monospace;font-size:12px">$"Order {id}"</code>. String interpolation destroys structure and makes logs unsearchable.</p></div>
+    <div class="card"><h3><span class="ico g">🚀</span>Bootstrap Logger First</h3><p>Configure the bootstrap logger at the very start of <code style="font-family:'Fira Code',monospace;font-size:12px">Program.cs</code> before anything else. This captures startup crashes that occur before the DI container is built.</p></div>
+    <div class="card"><h3><span class="ico a">🔇</span>Suppress Framework Noise</h3><p>Override <code style="font-family:'Fira Code',monospace;font-size:12px">Microsoft</code> and <code style="font-family:'Fira Code',monospace;font-size:12px">System</code> to <code style="font-family:'Fira Code',monospace;font-size:12px">Warning</code> in config. Otherwise 90% of your logs are framework internals with no business value.</p></div>
+    <div class="card"><h3><span class="ico b">📤</span>Always Flush on Exit</h3><p>Call <code style="font-family:'Fira Code',monospace;font-size:12px">Log.CloseAndFlush()</code> in the <code style="font-family:'Fira Code',monospace;font-size:12px">finally</code> block. Serilog buffers events — without flushing, the last seconds of logs before a crash are lost.</p></div>
+  </div>
+
+  <div class="card">
+    <h3>Production Checklist</h3>
+    <table class="tbl">
+      <tr><th></th><th>Practice</th><th>Why it matters</th></tr>
+      <tr><td><span class="tag g">✓</span></td><td>Message templates for all structured properties</td><td>Enables filtering, alerting, and grouping in any log sink</td></tr>
+      <tr><td><span class="tag g">✓</span></td><td>Bootstrap logger before DI container builds</td><td>Captures fatal startup exceptions before sinks are ready</td></tr>
+      <tr><td><span class="tag g">✓</span></td><td><code style="font-family:'Fira Code',monospace;font-size:12px">Log.CloseAndFlush()</code> in finally block</td><td>Guarantees buffered events reach all sinks before process exit</td></tr>
+      <tr><td><span class="tag g">✓</span></td><td>Suppress Microsoft/System to Warning</td><td>Reduces log volume by 80–90% with zero information loss</td></tr>
+      <tr><td><span class="tag g">✓</span></td><td>Correlation ID on every request</td><td>Trace a single request across all microservices end-to-end</td></tr>
+      <tr><td><span class="tag g">✓</span></td><td>Different log levels per environment</td><td>Debug in dev, Information in staging, Warning in prod</td></tr>
+      <tr><td><span class="tag g">✓</span></td><td>Log connection string injected from env vars</td><td>No secrets or API keys hardcoded in appsettings.json</td></tr>
+      <tr><td><span class="tag g">✓</span></td><td>Rolling file with retention limit</td><td>Prevents disk exhaustion — 7 days local, unlimited in cloud</td></tr>
+      <tr><td><span class="tag g">✓</span></td><td>Separate audit log sink</td><td>Compliance-grade immutable audit trail separate from app logs</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>What to Log at Each Level</h3>
+    <table class="tbl">
+      <tr><th>Level</th><th>Log These Events</th><th>Production?</th></tr>
+      <tr><td><span class="tag r">Verbose</span></td><td>Algorithm steps, loop iterations, raw SQL</td><td>Never</td></tr>
+      <tr><td><span class="tag b">Debug</span></td><td>Variable values, branch decisions, config values</td><td>Dev/Staging only</td></tr>
+      <tr><td><span class="tag g">Information</span></td><td>User actions, order placed, login, API call succeeded</td><td>✅ Yes</td></tr>
+      <tr><td><span class="tag a">Warning</span></td><td>Retry succeeded, deprecated API, rate limit approaching</td><td>✅ Yes — alert on spike</td></tr>
+      <tr><td><span class="tag r">Error</span></td><td>Unhandled exception, DB failure, external API error</td><td>✅ Yes — alert immediately</td></tr>
+      <tr><td><span class="tag r">Fatal</span></td><td>App cannot continue, data corruption risk</td><td>✅ Yes — wake someone up</td></tr>
+    </table>
+  </div>
+
+  <div class="alert ok"><span class="ai">🎉</span><span><strong>You're production-ready!</strong> You have a complete Serilog pipeline — structured logging, multi-sink output, per-level filtering, enrichers, correlation IDs, audit logging, Application Insights in Azure, and a CI/CD deployment. Industry-standard observability from day one.</span></div>
+
+  <div class="brow"><button class="btn out" onclick="go(7)">← Back</button><button class="btn" onclick="go(0)">↑ Back to Top</button></div>
+</div>
+
+</div><!-- /wrap -->
+
+<div class="footer">Serilog · .NET 8 · Azure Application Insights · Complete Industry Guide</div>
+
+<script>
+  const total = 9;
+  const btns  = document.querySelectorAll('.nb');
+  function go(i) {
+    document.querySelectorAll('.sec').forEach((s,j) => s.classList.toggle('on', j===i));
+    btns.forEach((b,j) => b.classList.toggle('on', j===i));
+    document.getElementById('pg').style.width = ((i+1)/total*100)+'%';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function cp(btn) {
+    const txt = btn.closest('.cb').querySelector('pre').innerText;
+    navigator.clipboard.writeText(txt).then(() => {
+      btn.textContent = 'Copied!'; btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+    });
+  }
+</script>
+</body>
+</html>
